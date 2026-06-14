@@ -1,0 +1,7 @@
+services:
+  bot:
+    build: .
+    container_name: test_bot_container
+    env_file:
+      - .env
+    restart: unless-stopped

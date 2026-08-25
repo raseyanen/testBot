@@ -1,13 +1,14 @@
-package main
+package botcore
 
 import (
+	"bot/db"
 	"context"
-	"database/sql"
 	"fmt"
-	"github.com/mymmrac/telego"
 	"log"
 	"slices"
 	"strings"
+
+	"github.com/mymmrac/telego"
 )
 
 func changeChatTitle(title string, chatID telego.ChatID, bot *telego.Bot) {
@@ -39,15 +40,15 @@ func isAdmin(userId int64, bot *telego.Bot, id telego.ChatID) bool {
 	return false
 }
 
-func getChatByID(chatID telego.ChatID, db *sql.DB, update telego.Update) *Chat {
+func getChatByID(chatID telego.ChatID, s *db.Storage, update telego.Update) *db.Chat {
 	if !fromChat(chatID) {
 		return nil
 	}
-	chat := read(chatID.ID, db)
+	chat := s.Chats.Read(chatID.ID)
 	if chat == nil {
 		//bot.SendMessage(ctx, &telego.SendMessageParams{ChatID: chatID, Text: "Сначала проинициализируйте чат!"})
-		chat = CreateChat(chatID.ID, update.Message.Chat.Title)
-		err := write(chat, db)
+		chat = db.NewChat(chatID.ID, update.Message.Chat.Title)
+		err := s.Chats.Write(chat)
 		if err != nil {
 			log.Printf("Ошибка записи чата в БД: %v", err)
 		}
@@ -55,9 +56,9 @@ func getChatByID(chatID telego.ChatID, db *sql.DB, update telego.Update) *Chat {
 	return chat
 }
 
-func changeWeekMain(chatID telego.ChatID, bot *telego.Bot, db *sql.DB) error {
+func ChangeWeekMain(chatID telego.ChatID, bot *telego.Bot, s *db.Storage) error {
 	ctx := context.Background()
-	chat := read(chatID.ID, db)
+	chat := s.Chats.Read(chatID.ID)
 	if chat == nil {
 		return fmt.Errorf("Нет такого чата")
 	}

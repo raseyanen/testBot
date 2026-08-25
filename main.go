@@ -1,38 +1,36 @@
 package main
 
 import (
+	"bot/botcore"
+	mydb "bot/db"
 	"bytes"
 	"context"
-	"database/sql"
+	"log"
+	"os"
+
 	"github.com/mymmrac/telego"
 	tu "github.com/mymmrac/telego/telegoutil"
 	"github.com/robfig/cron"
-	"log"
-	"os"
 )
 
 func main() {
-	db, err := sql.Open("sqlite", "./bot.db")
+	s := mydb.NewStorage("sqlite", "./bot.db")
 
+	bot, bh, err := botcore.CreateBotAndPoll()
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer db.Close()
-
-	// НЕ ТРОГАТЬ ВСЕ ЧТО ВЫШЕ
-
-	bot, bh, err := CreateBotAndPoll()
 
 	c := cron.New()
 
 	ChangeAllWeeks := func() {
-		ids, err1 := pickOverIds(db)
+		ids, err1 := s.Chats.GetAllIds()
 		if err1 != nil {
 			log.Println(err1)
 		}
 		for _, id := range ids {
 			println(id)
-			err2 := changeWeekMain(telego.ChatID{ID: id}, bot, db)
+			err2 := botcore.ChangeWeekMain(tu.ID(id), bot, s)
 			if err2 != nil {
 				//fmt.Print("ОШИБКА")
 				log.Println(err2)
@@ -41,15 +39,15 @@ func main() {
 	}
 
 	TolstobrowConnection := func() {
-		ids, err1 := pickOverIds(db)
+		ids, err1 := s.Chats.GetAllIds()
 		if err1 != nil {
 			log.Println(err1)
 		}
 		for _, id := range ids {
 			println(id)
-			chat := read(id, db)
+			chat := s.Chats.Read(id)
 			if chat.UseTolstobrow {
-				photo, _ := os.ReadFile("connection.jpg")
+				photo, _ := os.ReadFile("./assets/connection.jpg")
 				_, err2 := bot.SendPhoto(context.Background(), &telego.SendPhotoParams{MessageThreadID: chat.InfoThread, ParseMode: telego.ModeMarkdownV2, ChatID: telego.ChatID{ID: chat.ID}, Photo: tu.FileFromReader(bytes.NewReader(photo), "connection"), Caption: "[Tolstobrow connection](https://edu.vsu.ru/)"})
 				if err2 != nil {
 					//fmt.Print("ОШИБКА")
@@ -63,23 +61,23 @@ func main() {
 	c.AddFunc("0 30 18 * * 3", TolstobrowConnection)
 
 	//bot.DeleteMyCommands(context.Background(), nil)
-	SetAllCommands(bot)
+	botcore.SetAllCommands(bot)
 
-	ChatInit(bh, db)
-	ChangeNumDenum(bh, db)
-	ChangeWeek(bh, db)
-	ChangeTitle(bh, db)
-	SetUsers(bh, db)
-	SetMainThread(bh, db)
-	Ping(bh, db)
-	Tolstobrow(bh, db)
-	AdvertiseWiki(bh, db)
-	AdvertiseTelega(bh, db)
+	botcore.Init(bh, s)
+	botcore.ChangeWeekTitle(bh, s)
+	botcore.ChangeWeek(bh, s)
+	botcore.ChangeTitle(bh, s)
+	botcore.SetUsers(bh, s)
+	botcore.SetMainThread(bh, s)
+	botcore.Ping(bh, s)
+	botcore.Tolstobrow(bh, s)
+	botcore.AdvertiseWiki(bh, s)
+	botcore.AdvertiseTelega(bh, s)
 
 	// Не трогать
-	AddNewPeople(bh, db)
-	DelLeftPeople(bh, db)
-	// \/\/\/\/\/\/\/\/\/\
+	botcore.AddNewPeople(bh, s)
+	botcore.DelLeftPeople(bh, s)
+
 	go c.Start()
 	defer c.Stop()
 

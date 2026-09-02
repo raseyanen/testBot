@@ -23,9 +23,15 @@ func CreateBotAndPoll() (*telego.Bot, *th.BotHandler, error) {
 		log.Fatal("BOT_TOKEN environment variable is not set")
 	}
 
+	customApiServer := os.Getenv("TELEGRAM_API_SERVER")
+
+	if customApiServer == "" {
+		customApiServer = "https://api.telegram.org"
+	}
+
 	bot, err := telego.NewBot(token,
 		telego.WithDefaultDebugLogger(),
-		telego.WithAPIServer("https://api.moodroow.com/telegram")) // Убрать если телеграм не забанен
+		telego.WithAPIServer(customApiServer))
 
 	if err != nil {
 		log.Fatal(err)

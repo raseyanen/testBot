@@ -44,7 +44,7 @@ func NewStorage(driverName, dataSourceName string) *Storage {
 
 func (s *Storage) createTables() error {
 	_, err := s.db.Exec(`CREATE TABLE IF NOT EXISTS chats (
-		id INTEGER PRIMARY KEY,
+		id BIGINT PRIMARY KEY,
 		main_topic INTEGER,
 		num STRING,
 		den STRING,

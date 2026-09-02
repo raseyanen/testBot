@@ -21,20 +21,19 @@ type ChatRepository struct {
 }
 
 func (cr *ChatRepository) Write(chat *Chat) error {
-	db := cr.db
 	usersJson, err := json.Marshal(chat.Users)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal users: %v", err)
 	}
-	err = cr.Delete(chat.ID)
+
+	_, err = cr.db.Exec(`
+		INSERT OR REPLACE INTO chats (id, main_topic, num, den, title, users, use_tolstobrow)
+		VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		chat.ID, chat.InfoThread, chat.Num, chat.Den, chat.Title, usersJson, chat.UseTolstobrow,
+	)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to write chat: %v", err)
 	}
-	result, exec := db.Exec("INSERT INTO chats (id, main_topic, num, den, title, users, use_tolstobrow) VALUES (?, ?, ?, ?, ?, ?,?)", chat.ID, chat.InfoThread, chat.Num, chat.Den, chat.Title, usersJson, chat.UseTolstobrow)
-	if exec != nil {
-		return exec
-	}
-	fmt.Println(result.LastInsertId())
 	return nil
 }
 
@@ -95,7 +94,7 @@ func (c Chat) ToString() string {
 	return fmt.Sprintf("%v %v %v %v %v %v", c.ID, c.InfoThread, c.Num, c.Den, c.Title, c.Users)
 }
 func (cr *ChatRepository) Delete(id int64) error {
-	result, err := cr.db.Exec("DELETE FROM chats WHERE id = ?", id)
+	result, err := cr.db.Exec("DELETE FROM chats WHERE id = ?", int64(id))
 	if err != nil {
 		return fmt.Errorf("failed to delete chat: %v", err)
 	}

@@ -49,11 +49,11 @@ func CreateBotAndPoll() (*telego.Bot, *th.BotHandler, error) {
 }
 
 func SetAllCommands(bot *telego.Bot) {
-	err := bot.SetMyCommands(context.Background(), &telego.SetMyCommandsParams{Commands: adminCmds, Scope: telego.BotCommandScope(&telego.BotCommandScopeAllChatAdministrators{"all_chat_administrators"})})
+	err := bot.SetMyCommands(context.Background(), &telego.SetMyCommandsParams{Commands: adminCmds, Scope: telego.BotCommandScope(&telego.BotCommandScopeAllChatAdministrators{Type: "all_chat_administrators"})})
 	if err != nil {
 		log.Println(err)
 	}
-	err = bot.SetMyCommands(context.Background(), &telego.SetMyCommandsParams{Commands: userCmds, Scope: &telego.BotCommandScopeAllGroupChats{"all_group_chats"}})
+	err = bot.SetMyCommands(context.Background(), &telego.SetMyCommandsParams{Commands: userCmds, Scope: &telego.BotCommandScopeAllGroupChats{Type: "all_group_chats"}})
 	if err != nil {
 		log.Println(err)
 	}
